@@ -15,6 +15,27 @@ functions
 	button press that triggers the lock mode
 	when pressed, 
 
+Initialization
+id_registered? = False
+DL_id = 0
+lights = off
+servo = initial 
+
+lights(states):
+	#states:
+	scanning ID
+	ID registered
+	locked
+	DL presented, but does not match (this is not your cup)
+	DL presented, and matches (unlock)
+	call for help (silent? no light?)
+
+	switch (state):
+
+servo (state)
+	open, close
+
+
 
 while  True
 image = get_image
