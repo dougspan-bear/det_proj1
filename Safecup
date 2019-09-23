@@ -1,0 +1,41 @@
+Safecup
+
+functions
+# register the ID
+# lock the cup
+# unlock the cup
+# record staring faces
+# call for help
+
+# flow:
+# Initial state: register the ID. ID registered when the the LED ring flashes twice. LED ring then goes blank
+# Register the ID
+# 	Camera takes image of the ID and ID only. What does it record to compare against? Save DL number?
+# lock the cup 
+	button press that triggers the lock mode
+	when pressed, 
+
+
+while  True
+image = get_image
+
+if !id_registers AND image.contains(DL_number):
+	registeredDL_number = image_DLNumber
+	id_registered = True
+
+if (id_registered?):
+	if(short_button?):
+		lock_cup()
+	elif(long_button):
+		send an email to someone:
+	else (get_image):
+		if (image.contains(DL_number)):
+			if(DL_number == registeredDL_number):
+				unlock_Cup()
+			else:
+				flashErrorLight()
+		elif(image.contains(face)):
+			store_face()
+
+
+
