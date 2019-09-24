@@ -21,6 +21,7 @@ OFF = (0, 0, 0)
 
 
 def lights(pixels, state):
+	# controls light behavior. Does not handle interrupts
 	# lights begin and end with each LED in the off state
 
 	pixels.fill(OFF)
@@ -70,12 +71,70 @@ def lights(pixels, state):
 
 	pixels.fill(OFF)
 	pixels.show()
+	return True
 
 def servo(state):
+	#controls servo angle to lock/unlock the safecup
 	if state =='lock':
-	elif state =='unlock'
+		crickit.servo_1.angle = 0
+	elif state =='unlock':
+		crickit.servo_1.angle = 180
+	return True
+
+def readImg(image):
+	# returns the drivers license number if DL is detected
+	# returns cropped image of the largest face in the image if face detected and no DL number found
+	# returns empty array if no face or no drivers license found
+
+	# code stub here only to test program flow
+
+	if image == 1:
+		return 'ID', readID(image)
+	if image == 2:
+		return 'ID', '123457'
+	if image == 3:
+		return 'Face', [[0 for i in range(10)] for j in range(10)]
+	elif
+		return False,[]
+
+def readID (image):
+	# Only handles california driver's licenses
+	# Return empty string if no ID found
+	# Return drivers license number as a string if ID found
+
+	return '123456'
+
+def textFace(image):
+	print('texting face to phone')
 
 def main():
+	#runs a forever while loop when the function starts. 
+	# System state initializes with no ID registered
+	# System states and transitions are:
+
+	# scanning ID 		initial state. DL is an empty string.
+	#					Can only return to this state by
+	#					restarting program
+	#
+	# ID_registered 	DL is a non-empty string
+	# locked			DL is a non-empty string and button is pressed
+	# 
+
+	#initialize program loop
+	ID = ''
+	while True:
+
+		if not ID:
+			lights('ID_scanning')
+			faceOrID, content = readImg(1)
+			if faceOrID == 'ID':
+				ID = content
+		elif ID:
+			if 
+
+		else:
+			print ('something went wrong in ID loop')
+
 
 
 if __name__== '__main__':
