@@ -1,6 +1,6 @@
 import time
 from adafruit_crickit import crickit
-from adafruit_seesaw.neopixel import Neopixel
+from adafruit_seesaw.neopixel import NeoPixel
 
 #Set global variables
 
@@ -20,7 +20,7 @@ OFF = (0, 0, 0)
 
 
 
-def lights(pixels, state):
+def lights(state):
 	# controls light behavior. Does not handle interrupts
 	# lights begin and end with each LED in the off state
 
@@ -41,7 +41,7 @@ def lights(pixels, state):
 		pixels.show()
 		time.sleep(1)
 
-	elif state == 'cup_closed':
+	elif state == 'cup_locked':
 		#green light flashes quickly twice
 		for i in range(2):
 			pixels.fill(GREEN)
@@ -94,8 +94,8 @@ def readImg(image):
 		return 'ID', '123457'
 	if image == 3:
 		return 'Face', [[0 for i in range(10)] for j in range(10)]
-	elif
-		return False,[]
+	else:
+		return '',[]
 
 def readID (image):
 	# Only handles california driver's licenses
@@ -123,14 +123,43 @@ def main():
 	#initialize program loop
 	ID = ''
 	while True:
+		faceOrID=''
+		content =''
 
+
+		
 		if not ID:
+			readImginput = int(input('press 1 to load ID'))
+			print ('ID not loaded')
 			lights('ID_scanning')
-			faceOrID, content = readImg(1)
+			faceOrID, content = readImg(readImginput)
 			if faceOrID == 'ID':
 				ID = content
+				print('ID loaded', ID)
 		elif ID:
-			if 
+			readImginput = int(input('1 to load correct ID, 2 to load incorrect ID, 3 to be a creep, 4 for no face/ID'))
+			print(readImginput)
+			if crickit.touch_1.value:
+				print('lock button pressed')
+				servo('lock')
+				lights('cup_locked')
+			if crickit.touch_2.value:
+				print('call for help button pressed')
+			else:
+				faceOrID, content = readImg(readImginput)
+				if not faceOrID:
+					print('no face or ID found')
+				if faceOrID =='Face':
+					print('stranger danger')
+					textFace(content)
+				if faceOrID =='ID':
+					if content == ID:
+						print('ID correct')
+						lights('ID_correct')
+						servo('unlock')
+					else:
+						print('ID wrong')
+						lights('ID_wrong')
 
 		else:
 			print ('something went wrong in ID loop')
