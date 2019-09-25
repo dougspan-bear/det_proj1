@@ -2,6 +2,7 @@ import os
 import io
 import re
 import time
+import config
 import picamera
 from time import sleep
 from google.cloud import vision
@@ -12,8 +13,7 @@ from google.protobuf.json_format import MessageToDict
 
 
 #Set global variables
-
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "DET-2019-aad44b497877.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = config.GOOGLE_AUTH
 client = vision.ImageAnnotatorClient()
 image = 'image.jpg'
 
@@ -142,7 +142,7 @@ def readFace(image):
     return faceStr, face
 
 
-def textFace(imagePath, content):
+def textFace(imagePath, content, id):
     bounds = content['fdBoundingPoly']['vertices']
     image = Image.open(imagePath)
     # x_min, y_min, x_max, y_max
@@ -155,8 +155,41 @@ def textFace(imagePath, content):
                 ys.append(v)
     imCropped = image.crop((min(xs), min(ys), max(xs), max(ys)))
     imCropped.save('croppedImg.jpg')
-    print('texting face to phone')
+        
+    print('texting face to phone. ')
 
+# Import smtplib for the actual sending function
+import smtplib
+
+# And imghdr to find the types of our images
+import imghdr
+
+# Here are the email package modules we'll need
+from email.message import EmailMessage
+
+def sendEmail():
+    # Create the container email message.
+    msg = EmailMessage()
+    msg['Subject'] = 'Customer is in Danger'
+    # me == the sender's email address
+    # family = the list of all recipients' email addresses
+    msg['From'] = 'ste.daff@gmail.com'
+    msg['To'] = 'stephaniecd@berkley.edu'
+    msg.preamble = 'You will not see this in a MIME-aware mail reader.\n'
+
+    # Open the files in binary mode.  Use imghdr to figure out the
+    # MIME subtype for each specific image.
+    with open('croppedImg.jpg', 'rb') as fp:
+        img_data = fp.read()
+    msg.add_attachment(img_data, maintype='image',
+                                 subtype=imghdr.what(None, img_data))
+
+    # Send the email via our own SMTP server.
+    with smtplib.SMTP('smtp.gmail.com') as s:
+        s.connect('smtp.gmail.com', 587)
+        s.login('ste.daff', config.GMAIL_PW)
+        s.send_message(msg)
+        s.quit()
 
 def takephoto(camera):
     # this triggers an on-screen preview, so you know what you're photographing!
@@ -231,7 +264,7 @@ def main():
                 if faceOrID == 'FACE':
                     print('stranger danger')
                     lights('ID_wrong')
-                    textFace(pathToImg, content)
+                    textFace(pathToImg, content, ID)
                 if faceOrID == 'ID':
                     if content == ID:
                         print('ID correct')
