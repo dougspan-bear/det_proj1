@@ -2,7 +2,7 @@ import os
 import io
 import re
 import time
-import config
+#import config
 import picamera
 from time import sleep
 from google.cloud import vision
@@ -11,9 +11,15 @@ from adafruit_crickit import crickit
 from adafruit_seesaw.neopixel import NeoPixel
 from google.protobuf.json_format import MessageToDict
 
+#setting up pushdown buttons
+ss = crickit.seesaw
+BUTTON_LOCK_UNLOCK = crickit.SIGNAL1
+BUTTON_HELP = crickit.SIGNAL2
+ss.pin_mode(BUTTON_LOCK_UNLOCK, ss.INPUT_PULLUP)
+ss.pin_mode(BUTTON_HELP, ss.INPUT_PULLUP)
 
 #Set global variables
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = config.GOOGLE_AUTH
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "/home/pi/DET_JsonKey.json"
 client = vision.ImageAnnotatorClient()
 image = 'image.jpg'
 
@@ -54,7 +60,7 @@ def lights(state):
     elif state == 'cup_locked':
         #green light flashes quickly twice
         for i in range(2):
-            pixels.fill(GREEN)
+            pixels.fill(BLUE)
             pixels.show()
             time.sleep(.25)
             pixels.fill(OFF)
@@ -63,7 +69,7 @@ def lights(state):
 
     elif state == 'ID_wrong':
         #red light flashes quickly twice
-        for i in range(2):
+        for i in range(4):
             pixels.fill(RED)
             pixels.show()
             time.sleep(.25)
@@ -86,9 +92,9 @@ def lights(state):
 def servo(state):
     #controls servo angle to lock/unlock the safecup
     if state =='lock':
-        crickit.servo_1.angle = 0
-    elif state =='unlock':
         crickit.servo_1.angle = 180
+    elif state =='unlock':
+        crickit.servo_1.angle = 75
     return True
 
 def readImg(path):
@@ -117,7 +123,7 @@ def readID(image):
     response = client.text_detection(image=image)
     texts = response.full_text_annotation.text
     #matches = re.search("\\nDL\s(.+)\\nEXP", texts)
-    matches = re.search("\w{1}[0-9]{7}", texts)
+    matches = re.search("[a-zA-Z]{1}[0-9]{7}", texts)
     if matches:
         id = matches[0]
         idStr = 'ID'
@@ -126,7 +132,7 @@ def readID(image):
 
 
 def readFace(image):
-    faceConfidence = 0.9
+    faceConfidence = 0.8
     faceStr = ''
     face = None
     
@@ -193,10 +199,11 @@ def sendEmail():
 
 def takephoto(camera):
     # this triggers an on-screen preview, so you know what you're photographing!
-    camera.start_preview(alpha=180)
-    sleep(3)                   #give it a pause so you can adjust if needed
+    #camera.start_preview(alpha=180)
+    sleep(.5)                   #give it a pause so you can adjust if needed
     camera.capture('image.jpg') #save the image
-    camera.stop_preview()       #stop the preview
+    sleep(.5)
+    #camera.stop_preview()       #stop the preview
 
 
 def detect_text(path):
@@ -231,6 +238,7 @@ def main():
     ID = ''
     pathToImg = 'image.jpg'
     camera = picamera.PiCamera()
+    servo('lock')
 
     while True:
         
@@ -246,38 +254,49 @@ def main():
                 ID = content
                 print('ID loaded', ID)
                 lights('ID_registered')
+                servo('unlock')
 
+                
+        elif ID and not ss.digital_read(BUTTON_LOCK_UNLOCK):
+                 
+            print('lock button pressed')
+            servo('lock')
+            lights('cup_locked')
+            
+            pushCounter += 0.5
+
+            if pushCounter >= 2:
+                print("get Help")
+                lights('ID_wrong')
+                pushCounter = 0
+            time.sleep(0.5)
+        
         elif ID:
             takephoto(camera)
             faceOrID, content = readImg(pathToImg)
-            print("Found %s : %s" % (faceOrID, content))
-            
-            if crickit.touch_1.value:
-                print('lock button pressed')
-                servo('lock')
-                lights('cup_locked')
-            if crickit.touch_2.value:
-                print('call for help button pressed')
-            else:
-                if not faceOrID:
-                    print('no face or ID found')
-                if faceOrID == 'FACE':
-                    print('stranger danger')
+            print("Found %s : %s" % (faceOrID, content))          
+        
+            if not faceOrID:
+                print('no face or ID found')
+            if faceOrID == 'FACE':
+                print('stranger danger')
+                lights('ID_wrong')
+                textFace(pathToImg, content, ID)
+            if faceOrID == 'ID':
+                if content == ID:
+                    print('ID correct')
+                    lights('ID_correct')
+                    servo('unlock')
+                else:
+                    print('ID wrong')
                     lights('ID_wrong')
-                    textFace(pathToImg, content, ID)
-                if faceOrID == 'ID':
-                    if content == ID:
-                        print('ID correct')
-                        lights('ID_correct')
-                        servo('unlock')
-                    else:
-                        print('ID wrong')
-                        lights('ID_wrong')
 
         else:
             print('something went wrong in ID loop')
-
-
+        
+        pushCounter = 0
 
 if __name__== '__main__':
+    print("Started")
+    
     main()
